@@ -63,9 +63,20 @@ class MainActivity : AppCompatActivity() {
         }
 
     private fun startCamera() {
-        Toast.makeText(this, "Fitur ini belum tersedia", Toast.LENGTH_SHORT).show()
+        val utils = Utils()  // Create an instance of Utils
+        currentImageUri = utils.getImageUri(this)  // Call getImageUri
+        launcherIntentCamera.launch(currentImageUri!!)
     }
 
+    private val launcherIntentCamera = registerForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { isSuccess ->
+        if (isSuccess) {
+            showImage()
+        } else {
+            currentImageUri = null
+        }
+    }
     private fun startCameraX() {
         Toast.makeText(this, "Fitur ini belum tersedia", Toast.LENGTH_SHORT).show()
     }
