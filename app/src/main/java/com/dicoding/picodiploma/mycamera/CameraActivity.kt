@@ -37,7 +37,7 @@ class CameraActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.switchCamera.setOnClickListener {
-            cameraSelector = if (cameraSelector.equals(CameraSelector.DEFAULT_BACK_CAMERA)) CameraSelector.DEFAULT_FRONT_CAMERA
+            cameraSelector = if (cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) CameraSelector.DEFAULT_FRONT_CAMERA
             else CameraSelector.DEFAULT_BACK_CAMERA
 
             startCamera()
@@ -77,6 +77,7 @@ class CameraActivity : AppCompatActivity() {
                 .also {
                     it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
                 }
+
             imageCapture = ImageCapture.Builder().build()
 
             try {
@@ -99,9 +100,13 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun takePhoto() {
+
         val utils = Utils()
+
         val imageCapture = imageCapture ?: return
+
         val photoFile = utils.createCustomTempFile(application)
+
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
         imageCapture.takePicture(
             outputOptions,

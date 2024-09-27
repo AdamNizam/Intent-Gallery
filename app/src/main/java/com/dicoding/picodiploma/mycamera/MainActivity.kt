@@ -13,6 +13,9 @@ import androidx.core.content.ContextCompat
 import com.dicoding.picodiploma.mycamera.databinding.ActivityMainBinding
 import android.Manifest
 import android.content.Intent
+import android.view.OrientationEventListener
+import android.view.Surface
+import androidx.camera.core.ImageCapture
 import androidx.core.net.toUri
 import com.dicoding.picodiploma.mycamera.CameraActivity.Companion.CAMERAX_RESULT
 
@@ -21,6 +24,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     private var currentImageUri: Uri? = null
+
+    private var imageCapture: ImageCapture? = null
 
     companion object {
         private const val REQUIRED_PERMISSION = Manifest.permission.CAMERA
@@ -42,6 +47,24 @@ class MainActivity : AppCompatActivity() {
             this,
             REQUIRED_PERMISSION
         ) == PackageManager.PERMISSION_GRANTED
+
+    // konfigurasi potrait gambar ketika landscape
+    private val orientationEventListener by lazy {
+        object : OrientationEventListener(this) {
+            override fun onOrientationChanged(orientation: Int) {
+                if (orientation == ORIENTATION_UNKNOWN) {
+                    return
+                }
+                val rotation = when (orientation) {
+                    in 45 until 135 -> Surface.ROTATION_270
+                    in 135 until 225 -> Surface.ROTATION_180
+                    in 225 until 315 -> Surface.ROTATION_90
+                    else -> Surface.ROTATION_0
+                }
+                imageCapture?.targetRotation = rotation
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,6 +107,7 @@ class MainActivity : AppCompatActivity() {
     private fun startMedia( ){
         pickMultipleMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
     }
+
     private val pickMultipleMedia =
         registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(5)) { uris ->
             if (uris.isNotEmpty()) {
@@ -92,6 +116,7 @@ class MainActivity : AppCompatActivity() {
                 Log.d("PhotoPicker", "No media selected")
             }
         }
+
 
     private fun startCamera() {
         val utils = Utils()
@@ -136,5 +161,13 @@ class MainActivity : AppCompatActivity() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
     }
 
+    override fun onStart() {
+        super.onStart()
+        orientationEventListener.enable()
+    }
+    override fun onStop() {
+        super.onStop()
+        orientationEventListener.disable()
+    }
 
 }
