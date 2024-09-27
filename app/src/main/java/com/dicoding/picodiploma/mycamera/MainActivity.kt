@@ -1,5 +1,6 @@
 package com.dicoding.picodiploma.mycamera
 
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -8,7 +9,12 @@ import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.dicoding.picodiploma.mycamera.databinding.ActivityMainBinding
+import android.Manifest
+import android.content.Intent
+import androidx.core.net.toUri
+import com.dicoding.picodiploma.mycamera.CameraActivity.Companion.CAMERAX_RESULT
 
 class MainActivity : AppCompatActivity() {
 
@@ -16,12 +22,37 @@ class MainActivity : AppCompatActivity() {
 
     private var currentImageUri: Uri? = null
 
+    companion object {
+        private const val REQUIRED_PERMISSION = Manifest.permission.CAMERA
+    }
+
+    private val requestPermissionLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                Toast.makeText(this, "Permission request granted", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "Permission request denied", Toast.LENGTH_LONG).show()
+            }
+        }
+
+    private fun allPermissionsGranted() =
+        ContextCompat.checkSelfPermission(
+            this,
+            REQUIRED_PERMISSION
+        ) == PackageManager.PERMISSION_GRANTED
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Cek apakah Photo Picker tersedia
+        if (!allPermissionsGranted()) {
+            requestPermissionLauncher.launch(REQUIRED_PERMISSION)
+        }
+
+        // Cek Photo Picker
         if (isPhotoPickerAvailable()) {
             Toast.makeText(this, "Photo Picker tersedia", Toast.LENGTH_SHORT).show()
         } else {
@@ -63,8 +94,8 @@ class MainActivity : AppCompatActivity() {
         }
 
     private fun startCamera() {
-        val utils = Utils()  // Create an instance of Utils
-        currentImageUri = utils.getImageUri(this)  // Call getImageUri
+        val utils = Utils()
+        currentImageUri = utils.getImageUri(this)
         launcherIntentCamera.launch(currentImageUri!!)
     }
 
@@ -78,7 +109,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
     private fun startCameraX() {
-        Toast.makeText(this, "Fitur ini belum tersedia", Toast.LENGTH_SHORT).show()
+        val intent = Intent(this, CameraActivity::class.java)
+        launcherIntentCameraX.launch(intent)
+    }
+    private val launcherIntentCameraX = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (it.resultCode == CAMERAX_RESULT) {
+            currentImageUri = it.data?.getStringExtra(CameraActivity.EXTRA_CAMERAX_IMAGE)?.toUri()
+            showImage()
+        }
     }
 
     private fun showImage() {
@@ -95,5 +135,6 @@ class MainActivity : AppCompatActivity() {
     private fun isPhotoPickerAvailable(): Boolean {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
     }
+
 
 }
